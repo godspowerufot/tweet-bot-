@@ -20,7 +20,7 @@ const twitterClient = new TwitterApi({
 async function generateTweet() {
     try {
       // Hardcoded tweet for testing
-      const tweet = "🤖 Automated Tweet: THIS WAS TWEETED FROM MY BOT IN DEV";
+      const tweet = "🤖 Automated Tweet:  CHECKING SEVERAL BOT IN DEV";
       return tweet;
     } catch (error) {
       console.error("Error generating tweet:", error);
@@ -45,6 +45,15 @@ async function postTweet() {
 
 // Run the bot
 postTweet();
+// Continuous loop to post tweet every 20 seconds
+async function startPosting() {
+    setInterval(async () => {
+      await postTweet();
+    }, 20000); // 20000 ms = 20 seconds
+  }
+  
+  // Run the bot
+  startPosting();
 
 async  function Credentials() {
     try {
