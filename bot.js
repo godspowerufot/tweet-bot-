@@ -1,14 +1,21 @@
-// Import required modules
-import OpenAI from "openai";
-import { TwitterApi } from "twitter-api-v2";
-import dotenv from 'dotenv';
-dotenv.config()
-// OpenAI API Setup
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY
-});
 
-// Twitter API Setup
+import { TwitterApi } from 'twitter-api-v2';
+import OpenAIApi from 'openai';
+import dotenv from 'dotenv';
+import fs from 'fs';
+import path from 'path';
+
+dotenv.config(); // Load environment variables
+
+// Validate environment variables
+if (!process.env.TWITTER_API_KEY || !process.env.TWITTER_API_SECRET || 
+    !process.env.TWITTER_ACCESS_TOKEN || !process.env.TWITTER_ACCESS_SECRET || 
+    !process.env.OPENAI_API_KEY) {
+  console.error('❌ Missing environment variables. Exiting...');
+  process.exit(1);
+}
+
+// Initialize Twitter API client
 const twitterClient = new TwitterApi({
   appKey: process.env.TWITTER_API_KEY,
   appSecret: process.env.TWITTER_API_SECRET,
@@ -16,56 +23,117 @@ const twitterClient = new TwitterApi({
   accessSecret: process.env.TWITTER_ACCESS_SECRET,
 });
 
-// Function to generate a tweet using ChatGPT
-async function generateTweet() {
-    try {
-      // Hardcoded tweet for testing
-      const tweet = "🤖 Automated Tweet:  CHECKING SEVERAL BOT IN DEV";
-      return tweet;
-    } catch (error) {
-      console.error("Error generating tweet:", error);
-      return null;
-    }
-  }
-  
-// Function to post the tweet
-async function postTweet() {
+// Initialize OpenAI API client for GPT-4 and DALL-E
+const openai = new OpenAIApi({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+// Function to generate an image using DALL·E
+async function generateImage(prompt) {
   try {
-    const tweetContent = await generateTweet();
-    if (tweetContent) {
-      await twitterClient.v2.tweet(tweetContent);
-      console.log("Tweet posted successfully:", tweetContent);
-    } else {
-      console.log("Failed to generate tweet content.");
-    }
+    console.log('🖌️ Generating image...');
+    const response = await openai.images.generate({
+      prompt: prompt,
+      n: 1,
+      size: '1024x1024',
+    });
+
+    const imageUrl = response.data[0].url; // Get the image URL
+    const imageResponse = await fetch(imageUrl);
+    const buffer = await imageResponse.arrayBuffer();
+
+    const imagePath = path.resolve('./generated-image.png');
+    fs.writeFileSync(imagePath, Buffer.from(buffer));
+    console.log('📁 Image saved locally:', imagePath);
+
+    return imagePath;
   } catch (error) {
-    console.error("Error posting tweet:", error);
+    console.error('❌ Error generating image:', error);
+    return null;
   }
 }
 
-// Run the bot
-postTweet();
-// Continuous loop to post tweet every 20 seconds
-async function startPosting() {
-    setInterval(async () => {
-      await postTweet();
-    }, 20000); // 20000 ms = 20 seconds
+// Function to upload an image to Twitter
+async function uploadImageToTwitter(imagePath) {
+  try {
+    console.log('🚀 Uploading image to Twitter...');
+    const mediaId = await twitterClient.v1.uploadMedia(imagePath);
+    console.log('✅ Image uploaded to Twitter. Media ID:', mediaId);
+    return mediaId;
+  } catch (error) {
+    console.error('❌ Error uploading image to Twitter:', error);
+    return null;
   }
-  
-  // Run the bot
-  startPosting();
+}
 
-async  function Credentials() {
-    try {
-      const { data } = await twitterClient.v2.me();
-      console.log("Authenticated as:", data.username);
-    } catch (error) {
-      console.error("Authentication failed:", error);
-    }
-  };
-  
-  Credentials()
-  console.log(process.env.TWITTER_API_KEY);
-console.log(process.env.TWITTER_API_SECRET);
-console.log(process.env.TWITTER_ACCESS_TOKEN);
-console.log(process.env.TWITTER_ACCESS_SECRET);
+// Function to generate tweet text using GPT-4
+async function generateTweetText(prompt) {
+  try {
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4', // Specify GPT-4 model
+      messages: [{
+        role: 'user',
+        content: `Write a concise tweet about the following futuristic topic: ${prompt}`,
+      }],
+      max_tokens: 100,
+      temperature: 0.7,
+    });
+
+    // Extract the generated tweet text from the response
+    const tweetText = response.choices[0].message.content.trim();
+    console.log('📝 Generated Tweet:', tweetText);
+    return tweetText;
+  } catch (error) {
+    console.error('❌ Error generating tweet:', error);
+    return 'Something went wrong with generating the tweet.';
+  }
+}
+
+
+// Function to post a tweet with text and image
+async function postTweetWithImage(text, mediaId) {
+  try {
+    console.log('📢 Posting tweet...');
+    await twitterClient.v2.tweet({
+      text: text,
+      media: { media_ids: [mediaId] },
+    });
+    console.log('✅ Tweet posted successfully!');
+  } catch (error) {
+    console.error('❌ Error posting tweet:', error);
+  }
+}
+
+// Main function to automate the process
+async function main() {
+  console.log('💡 Starting the bot...');
+  const prompt = "Cosmos, crypto, blockchain, AI, and futuristic technology";
+
+  // Step 1: Generate the image
+  const imagePath = await generateImage(prompt);
+  if (!imagePath) {
+    console.error('⚠️ Image generation failed. Exiting.');
+    return;
+  }
+
+  // Step 2: Generate the tweet text using GPT-4
+  const tweetText = await generateTweetText(prompt);
+
+  // Step 3: Upload the image to Twitter
+  const mediaId = await uploadImageToTwitter(imagePath);
+  if (!mediaId) {
+    console.error('⚠️ Image upload failed. Exiting.');
+    return;
+  }
+
+  // Step 4: Post the tweet with the image
+  await postTweetWithImage(tweetText, mediaId);
+
+  console.log('🚀 Bot completed successfully!');
+}
+
+// Run the main function every 3 minutes
+setInterval(main, 3 * 60 * 1000); // 3 minutes in milliseconds
+
+// First run to test bot immediately
+main();
