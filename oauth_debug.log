@@ -1,0 +1,13 @@
+2024-12-15T20:15:53.994Z - Ngrok established at: https://eb1d-102-90-81-235.ngrok-free.app
+2024-12-15T20:16:42.146Z - Generated Request Token: oauthToken=5enVOAAAAAABxkFUAAABk8v3Sb8, oauthTokenSecret=GPFeMrZzkYWNr7EEYrVOtT3s2CmoidcQ
+2024-12-15T20:16:51.338Z - Generated Request Token: oauthToken=SceQtAAAAAABxkFUAAABk8v3bnQ, oauthTokenSecret=m3APQPDKK79UBL8zMeiQXBIPndesEcIA
+2024-12-15T20:24:49.964Z - Generated Request Token: oauthToken=jtLRhQAAAAABxkFUAAABk8v-u7Q, oauthTokenSecret=YsMR88EoXeFQnKwTADpXIYludFD7PcGB
+2024-12-15T20:25:02.250Z - Generated Request Token: oauthToken=83ENRgAAAAABxkFUAAABk8v-670, oauthTokenSecret=St9uFuQJscforzNiMBPTFJgVdbixOMqD
+2024-12-15T20:28:49.688Z - Ngrok established at: https://503c-102-90-81-235.ngrok-free.app
+2024-12-15T20:30:08.638Z - Generated Request Token: oauthToken=2tn3vwAAAAABxkFUAAABk8wDmCE, oauthTokenSecret=YIhrTyM6708oqKCAvNR3WyIhZIgUgOQZ
+2024-12-15T20:30:35.966Z - Generated Request Token: oauthToken=9qkMsQAAAAABxkFUAAABk8wEA-4, oauthTokenSecret=tu7Br8oWb0TSKfvDZMStC2HVGnEE4Vbt
+2024-12-15T20:32:51.030Z - Ngrok established at: https://d880-102-90-81-235.ngrok-free.app
+2024-12-15T20:33:27.893Z - Generated Request Token: oauthToken=G-PikAAAAAABxkFUAAABk8wGo5Y, oauthTokenSecret=9BmxblSSo3dfL0zIcTRYLHaJShQ2XSZT
+2024-12-15T20:33:34.498Z - Callback Query Parameters: {"oauth_token":"G-PikAAAAAABxkFUAAABk8wGo5Y","oauth_verifier":"HyhJxgYc0X7ko64JRCM0pzzwxZ3BGnyH"}
+2024-12-15T20:33:34.498Z - Retrieved OAuth Token Secret: 9BmxblSSo3dfL0zIcTRYLHaJShQ2XSZT
+2024-12-15T20:33:35.741Z - Access Token: 1867555409210318848-Ga9HASX2P5ezvs38y2KybjML69AFeP, Access Token Secret: G0iGecr4nvQCjW0hT7j1W0qVIyS71xBGratxypCzpWw8X

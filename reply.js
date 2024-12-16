@@ -1,4 +1,3 @@
-
 import { TwitterApi } from 'twitter-api-v2';
 import OpenAIApi from 'openai';
 import dotenv from 'dotenv';
@@ -8,13 +7,16 @@ import path from 'path';
 dotenv.config(); // Load environment variables
 
 // Validate environment variables
-if (!process.env.APP_CONSUMER_KEY|| !process.env.APP_CONSUMER_SECRET|| 
-    !process.env.TWITTER_ACCESS_TOKEN || !process.env.TWITTER_ACCESS_SECRET || 
-    !process.env.OPENAI_API_KEY) {
+if (
+  !process.env.APP_CONSUMER_KEY ||
+  !process.env.APP_CONSUMER_SECRET ||
+  !process.env.TWITTER_ACCESS_TOKEN ||
+  !process.env.TWITTER_ACCESS_SECRET ||
+  !process.env.OPENAI_API_KEY
+) {
   console.error('❌ Missing environment variables. Exiting...');
   process.exit(1);
 }
-
 
 // Initialize Twitter API client
 const twitterClient = new TwitterApi({
@@ -22,12 +24,26 @@ const twitterClient = new TwitterApi({
   appSecret: process.env.APP_CONSUMER_SECRET,
   accessToken: process.env.TWITTER_ACCESS_TOKEN,
   accessSecret: process.env.TWITTER_ACCESS_SECRET,
+  bearerToken:process.env.BEARER_TOKEN
 });
 
 // Initialize OpenAI API client for GPT-4 and DALL-E
 const openai = new OpenAIApi({
   apiKey: process.env.OPENAI_API_KEY,
 });
+
+// Function to fetch your Twitter user ID
+async function getUserId() {
+  try {
+    const user = await twitterClient.v2.me();
+    console.log('Your Twitter User ID:', user.data.id);
+    console.log('Your Twitter Username:', user.data.username);
+    return user.data.id;
+  } catch (error) {
+    console.error('Error fetching user details:', error);
+    return null;
+  }
+}
 
 // Function to generate an image using DALL·E
 async function generateImage(prompt) {
@@ -71,15 +87,17 @@ async function uploadImageToTwitter(imagePath) {
 async function generateTweetText(prompt) {
   try {
     const response = await openai.chat.completions.create({
-      model: 'gpt-4', // Specify GPT-4 model
-      messages: [{
-        role: 'user',
-        content: `Write a concise tweet about the following futuristic topic randomly  and short history about top crypto influencers and top people that influence the market bitcoin founder, etcadd #solana #solanaAiAgent  : ${prompt}`,
-      }],
+      model: 'gpt-4',
+      messages: [
+        {
+          role: 'user',
+          content: `Write a concise tweet about futuristic tech and crypto influencers (like Elon Musk, Bitcoin founder) including #solana and #solanaAiAgent: ${prompt}`,
+        },
+      ],
       max_tokens: 100,
       temperature: 0.7,
     });
-    // Extract the generated tweet text from the response
+
     const tweetText = response.choices[0].message.content.trim();
     console.log('📝 Generated Tweet:', tweetText);
     return tweetText;
@@ -89,25 +107,42 @@ async function generateTweetText(prompt) {
   }
 }
 
-
 // Function to post a tweet with text and image
 async function postTweetWithImage(text, mediaId) {
   try {
     console.log('📢 Posting tweet...');
-    await twitterClient.v2.tweet({
+    const tweet = await twitterClient.v2.tweet({
       text: text,
       media: { media_ids: [mediaId] },
     });
-    console.log('✅ Tweet posted successfully!');
+    console.log('✅ Tweet posted successfully!', tweet);
+    return tweet.data.id; // Return the tweet ID
   } catch (error) {
     console.error('❌ Error posting tweet:', error);
+    return null;
   }
 }
 
-// Main function to automate the process
+// Function to reply to a tweet
+// Function to reply to a tweet
+async function replyToTweet(tweetId, replyText) {
+    try {
+      console.log(`💬 Replying to Tweet ID ${tweetId}...`);
+      const response = await twitterClient.v2.tweet({
+        text: replyText,
+        reply: { in_reply_to_tweet_id: tweetId },
+      });
+      console.log('✅ Reply posted successfully!', response);
+    } catch (error) {
+      console.error('❌ Error replying to tweet:', error);
+    }
+  }
+  
+
+// Main function to automate posting and replying
 async function main() {
   console.log('💡 Starting the bot...');
-  const prompt = " high quality HD Cosmos, crypto, blockchain, AI, and futuristic technology,Quantum art , Ancient Egyptians , love randmly  AI, humanoid, solana , solana agent  ";
+  const prompt = "High-quality HD Cosmos, crypto, blockchain, AI, futuristic technology, Quantum art, Ancient Egyptians, love, AI, humanoid, Solana, Solana agent.";
 
   // Step 1: Generate the image
   const imagePath = await generateImage(prompt);
@@ -127,13 +162,29 @@ async function main() {
   }
 
   // Step 4: Post the tweet with the image
-  await postTweetWithImage(tweetText, mediaId);
+  const tweetId = await postTweetWithImage(tweetText, mediaId);
+  if (!tweetId) {
+    console.error('⚠️ Tweet posting failed. Exiting.');
+    return;
+  }
 
-  console.log('🚀 Bot completed successfully!');
+  // Step 5: Automatically reply to any comments
+  const userId = await getUserId();
+  const stream = await twitterClient.v2.searchStream({
+    expansions: ['author_id'],
+    'tweet.fields': ['conversation_id', 'author_id', 'text'],
+  });
+
+  stream.on('data', async (tweet) => {
+    if (tweet.data.in_reply_to_user_id === userId) {
+      console.log('📝 New comment detected:', tweet.data.text);
+
+      const replyPrompt = `Generate a creative and positive reply to this comment: "${tweet.data.text}"`;
+      const replyText = await generateTweetText(replyPrompt);
+      await replyToTweet(tweet.data.id, replyText);
+    }
+  });
 }
 
-// Run the main function every 3 minutes
-setInterval(main, 5* 60 * 1000); // 3 minutes in milliseconds
-
-// First run to test bot immediately
+// Start the bot
 main();
