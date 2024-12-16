@@ -74,7 +74,7 @@ async function generateTweetText(prompt) {
       model: 'gpt-4', // Specify GPT-4 model
       messages: [{
         role: 'user',
-        content: `Write a concise tweet about the following futuristic topic randomly  and short history about top crypto influencers and top people that influence the market bitcoin founder, etcadd #solana #solanaAiAgent  : ${prompt}`,
+        content: `Write a concise tweet about the following futuristic  THE HASHTAGS SHOULH ONLY BE TWO topic randomly  and short history about top crypto influencers and top people that influence the market bitcoin founder, etcadd #solana #solanaAiAgent  : ${prompt}`,
       }],
       max_tokens: 100,
       temperature: 0.7,
@@ -133,7 +133,7 @@ async function main() {
 }
 
 // Run the main function every 3 minutes
-setInterval(main, 5* 60 * 1000); // 3 minutes in milliseconds
+setInterval(main,9* 60 * 1000); // 3 minutes in milliseconds
 
 // First run to test bot immediately
 main();
